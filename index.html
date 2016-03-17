@@ -1,0 +1,24 @@
+<html>
+	<head>
+		<script src="jszip.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<style id="bookstyle"></style>
+	</head>
+
+<body>
+	<div id="menu" class="container">
+		<h1>Marck's epub reader</h1>
+		<p>Sumbit your file here:</p>
+		<input type="file" id="ebookfile"/>
+		<button onclick="runReader()">Read!</button>
+	</div>
+
+	<div class="hidden" id="reader">
+		<div class="controls">
+			<button class="next" onclick="nextPage()">Next page</button>
+			<button class="previous" onclick="previousPage()">Previous page</button>
+		</div>
+	</div>
+</body>
+<script src="book.js"></script>
+</html>
