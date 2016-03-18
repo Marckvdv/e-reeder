@@ -27,14 +27,40 @@
 	text-align: center;
 }
 
-.hidden {
-	display: none;
-}
-
 body {
 	margin: 0;
 }
 
-.controls {
-	text-align: center;
+iframe {
+	position: fixed;
+	bottom: 0;
+	height: 100%;
+}
+
+.controlButton {
+	position: fixed;
+	bottom: 0;
+	height: 100%;
+	width: 10%;
+	display: block;
+	z-index: 1;
+	background-color: rgb(255, 0, 0);
+	opacity: 0.0;
+}
+
+#next {
+	right: 0;
+}
+
+#prev {
+	left: 0;
+}
+
+#next:hover, #prev:hover {
+	animation: buttonFade 1.0s forwards;
+}
+
+@keyframes buttonFade {
+	from { opacity: 0.0; }
+	to   { opacity: 0.2; }
 }

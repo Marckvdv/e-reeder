@@ -1,22 +1,51 @@
 var session = {
+	pages: document.getElementById("pages"),
 	reader: document.getElementById("reader"),
 	input: document.getElementById("ebookfile"),
 	menu: document.getElementById("menu"),
-	bookStyle: document.getElementById("bookstyle"),
 
-	currentBook: {}
+	currentBook: {},
 };
 
-function restoreScrollPosition(identifier) {
-	var scrollDataJSON = localStorage.getItem("scrollData");
-	if(scrollDataJSON) {
-		scrollData = JSON.parse(scrollDataJSON);
-		document.body.scrollTo(0, scrollData[identifier]);
+function restorePage(identifier) {
+	var pageDataJSON = localStorage.getItem("pageData");
+	if(pageDataJSON) {
+		pageData = JSON.parse(pageDataJSON);
+		var page = pageData[identifier];
+		if(page) {
+			gotoPage(page);
+		} else {
+			gotoPage(0);
+		}
+	} else {
+		gotoPage(0);
+	}
+}
+
+function gotoPage(page) {
+	session.pages.children[session.currentBook.currentPage].hidden = true;
+	session.currentBook.currentPage = page;
+	session.pages.children[session.currentBook.currentPage].hidden = false;
+}
+
+function nextPage() {
+	gotoPage(session.currentBook.currentPage + 1);
+}
+
+function previousPage() {
+	gotoPage(session.currentBook.currentPage - 1);
+}
+
+function iframeSetVisibility(iframe, visible) {
+	if(visible) {
+		iframe.style.display = "block";
+	} else {
+		iframe.style.display = "none";
 	}
 }
 
 function addStyleSheets(epub, content) {
-	var links = [].slice.call(session.reader.getElementsByTagName("link"));
+	var links = [].slice.call(session.pages.getElementsByTagName("link"));
 	var styleSheets = links.filter( function(link) {
 		return link.getAttribute("rel") === "stylesheet" && link.getAttribute("type") === "text/css";
 	});
@@ -36,15 +65,15 @@ function addStyleSheets(epub, content) {
 	}
 }
 
-function storeScrollPosition(identifier) {
-	var scrollDataJSON = localStorage.getItem("scrollData");
-	var scrollData = {};
+function storePage(identifier) {
+	var pageDataJSON = localStorage.getItem("pageData");
+	var pageData = {};
 
-	if(scrollDataJSON) {
-		scrollData = JSON.parse(scrollDataJSON);
-		scrollData[identifier] = document.body.scrollTop;
+	if(pageDataJSON) {
+		pageData = JSON.parse(pageDataJSON);
+		pageData[identifier] = session.currentBook.currentPage;
 	}
-	localStorage.setItem("scrollData", JSON.stringify(scrollData));
+	localStorage.setItem("pageData", JSON.stringify(pageData));
 }
 
 function runReader() {
@@ -58,15 +87,17 @@ function runReader() {
 			var epub = new JSZip(content);
 			var contentPath = getContentPath(epub);
 			var content = parseContent(epub, contentPath);
-
 			session.currentBook = content;
+
 			window.onbeforeunload = function(e) {
-				storeScrollPosition(session.currentBook.identifier);
+				storePage(session.currentBook.identifier);
 			};
 
-			addPages(epub, content, session.reader);
+			addPages(epub, content, session.pages);
+			session.reader.hidden = false;
+
 			addStyleSheets(epub, content);
-			restoreScrollPosition(content.identifier);
+			restorePage(content.identifier);
 			console.log(content);
 		};
 		fileReader.readAsBinaryString(file);
@@ -78,16 +109,21 @@ function runReader() {
 }
 
 function addPages(epub, content, node) {
-	session.reader.setAttribute("class", "");
+	session.pages.hidden = false;
 	for(var i = 0; i < content.order.length; ++i) {
 		var id = content.order[i];
 		var item = content.items[id];
 
-		var html = document.createElement("iframe");
-		if(i != content.currentPage) html.setAttribute("class", "item hidden");
-		else html.setAttribute("class", "item");
-		html.setAttribute("src", item.url);
-		node.appendChild(html);
+		var div = document.createElement("div");
+		div.setAttribute("id", "page" + i);
+		div.hidden = true;
+
+		var iframe = document.createElement("iframe");
+		iframe.setAttribute("class", "item");
+		iframe.setAttribute("src", item.url);
+
+		div.appendChild(iframe);
+		node.appendChild(div);
 	}
 }
 
@@ -135,7 +171,4 @@ function parseContent(epub, path) {
 		order: order,
 		currentPage: 0
 	};
-}
-
-function nextPage() {
 }

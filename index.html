@@ -12,12 +12,14 @@
 		<button onclick="runReader()">Read!</button>
 	</div>
 
-	<div class="hidden" id="reader">
+	<div hidden id="reader">
 		<div class="controls">
-			<button class="next" onclick="nextPage()">Next page</button>
-			<button class="previous" onclick="previousPage()">Previous page</button>
+			<a onclick="nextPage()" href="#" class="controlButton" id="next"></a>
+			<a onclick="previousPage()" href="#" class="controlButton" id="prev"></a>
 		</div>
+		<div id="pages">
 	</div>
 </body>
+
 <script src="book.js"></script>
 </html>
