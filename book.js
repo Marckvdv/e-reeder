@@ -1,3 +1,5 @@
+"use strict";
+
 var session = {
 	pages: document.getElementById("pages"),
 	reader: document.getElementById("reader"),
@@ -10,7 +12,7 @@ var session = {
 function restorePage(identifier) {
 	var pageDataJSON = localStorage.getItem("pageData");
 	if(pageDataJSON) {
-		pageData = JSON.parse(pageDataJSON);
+		var pageData = JSON.parse(pageDataJSON);
 		var page = pageData[identifier];
 		if(page) {
 			gotoPage(page);
@@ -36,32 +38,37 @@ function previousPage() {
 	gotoPage(session.currentBook.currentPage - 1);
 }
 
-function iframeSetVisibility(iframe, visible) {
-	if(visible) {
-		iframe.style.display = "block";
-	} else {
-		iframe.style.display = "none";
-	}
+function getAllElementsWithAttribute(node, attribute) {
+	return [].slice.call(node.getElementsByTagName("*")).filter(function(v) {
+		return v.getAttribute(attribute) !== null;
+	});
 }
 
-function addStyleSheets(epub, content) {
-	var links = [].slice.call(session.pages.getElementsByTagName("link"));
-	var styleSheets = links.filter( function(link) {
-		return link.getAttribute("rel") === "stylesheet" && link.getAttribute("type") === "text/css";
-	});
+function findItemURL(href) {
+	var items = session.currentBook.items;
+	return Object.keys(items)
+		.map(function (v) { return items[v]; })
+		.find(function (v) { return v.href === href; });
+}
 
-	var uniqueStyleSheets = {};
-	for(var i = 0; i < styleSheets.length; ++i) {
-		var href = styleSheets[i].getAttribute("href");
-		var path = content.path + "/" + href;
-		uniqueStyleSheets[href] = path;
+function replaceRelativeURLs(page) {
+	var hrefs = getAllElementsWithAttribute(page.contentDocument, "href");
+	for(var j = 0; j < hrefs.length; ++j) {
+		var href = hrefs[j].getAttribute("href");
+		var item = findItemURL(href);
+		if(item) {
+			hrefs[j].setAttribute("href", item.url);
+		}
 	}
 
-	for(var i = 0; i < styleSheets.length; ++i) {
-		var file = epub.file(uniqueStyleSheets[styleSheets[i].getAttribute("href")]);
-		var data = file.asArrayBuffer();
-		var blob = new Blob([data]);
-		styleSheets[i].setAttribute("href", URL.createObjectURL(blob));
+	var srcs = getAllElementsWithAttribute(page.contentDocument, "src");
+	for(var j = 0; j < srcs.length; ++j) {
+		var src = srcs[j].getAttribute("src");
+		var item = findItemURL(src);
+
+		if(item) {
+			srcs[j].setAttribute("src", item.url);
+		}
 	}
 }
 
@@ -83,35 +90,32 @@ function runReader() {
 	if(file) {
 		var fileReader = new FileReader();
 		fileReader.onload = function(e) {
-			var content = e.target.result;
-			var epub = new JSZip(content);
+			var epub = new JSZip(e.target.result);
 			var contentPath = getContentPath(epub);
-			var content = parseContent(epub, contentPath);
-			session.currentBook = content;
+			var book = parseContent(epub, contentPath);
+			session.currentBook = book;
 
 			window.onbeforeunload = function(e) {
 				storePage(session.currentBook.identifier);
 			};
 
-			addPages(epub, content, session.pages);
-			session.reader.hidden = false;
+			addPages(book, session.pages);
+//			replaceRelativeURLs(session.pages.getElementsByTagName("iframe"));
+			restorePage(book.identifier);
 
-			addStyleSheets(epub, content);
-			restorePage(content.identifier);
+			session.reader.hidden = false;
 		};
 		fileReader.readAsBinaryString(file);
-
-		return content;
 	} else {
 		alert("Please select a file first!");
 	}
 }
 
-function addPages(epub, content, node) {
+function addPages(book, node) {
 	session.pages.hidden = false;
-	for(var i = 0; i < content.order.length; ++i) {
-		var id = content.order[i];
-		var item = content.items[id];
+	for(var i = 0; i < book.order.length; ++i) {
+		var id = book.order[i];
+		var item = book.items[id];
 
 		var div = document.createElement("div");
 		div.setAttribute("id", "page" + i);
@@ -120,6 +124,9 @@ function addPages(epub, content, node) {
 		var iframe = document.createElement("iframe");
 		iframe.setAttribute("class", "item");
 		iframe.setAttribute("src", item.url);
+		iframe.onload = function() {
+			replaceRelativeURLs(this);
+		};
 
 		div.appendChild(iframe);
 		node.appendChild(div);
@@ -146,11 +153,14 @@ function parseContent(epub, path) {
 		var id = itemTags[i].getAttribute("id");
 		var href = itemTags[i].getAttribute("href");
 
-		var blob = new Blob([epub.folder(contentPath).file(href).asArrayBuffer()]);
-		items[id] = {
-			href: href,
-			url: URL.createObjectURL(blob)
-		};
+		var file = epub.folder(contentPath).file(href);
+		if(file) {
+			var blob = new Blob([file.asArrayBuffer()]);
+			items[id] = {
+				href: href,
+				url: URL.createObjectURL(blob)
+			};
+		}
 	}
 
 	var itemRefTags = xml.getElementsByTagName("itemref");
