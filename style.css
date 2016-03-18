@@ -46,18 +46,21 @@ iframe {
 	z-index: 1;
 	background-color: rgb(255, 0, 0);
 	opacity: 0.0;
+	transition: all 0.2s ease-in-out;
 }
 
 #next {
 	right: 0;
+	background: linear-gradient(to left, red, rgba(255, 0, 0, 0));
 }
 
 #prev {
 	left: 0;
+	background: linear-gradient(to right, red, rgba(255, 0, 0, 0));
 }
 
 #next:hover, #prev:hover {
-	animation: buttonFade 1.0s forwards;
+	opacity: 0.2;
 }
 
 @keyframes buttonFade {

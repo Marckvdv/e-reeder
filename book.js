@@ -98,7 +98,6 @@ function runReader() {
 
 			addStyleSheets(epub, content);
 			restorePage(content.identifier);
-			console.log(content);
 		};
 		fileReader.readAsBinaryString(file);
 
