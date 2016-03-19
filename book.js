@@ -100,7 +100,6 @@ function runReader() {
 			};
 
 			addPages(book, session.pages);
-//			replaceRelativeURLs(session.pages.getElementsByTagName("iframe"));
 			restorePage(book.identifier);
 
 			session.reader.hidden = false;
@@ -166,7 +165,10 @@ function parseContent(epub, path) {
 	var itemRefTags = xml.getElementsByTagName("itemref");
 	var order = [];
 	for(var i = 0; i < itemRefTags.length; ++i) {
-		order.push(itemRefTags[i].getAttribute("idref"));
+		var id = itemRefTags[i].getAttribute("idref");
+		if(items[id]) {
+			order.push(id);
+		}
 	}
 
 	return {

@@ -18,6 +18,9 @@
 	width: 100%;
 	left: 10%;
 	width: 80%;
+	position: fixed;
+	bottom: 0;
+	height: 100%;
 }
 
 #reader {
@@ -31,12 +34,6 @@
 
 body {
 	margin: 0;
-}
-
-iframe {
-	position: fixed;
-	bottom: 0;
-	height: 100%;
 }
 
 .controlButton {
