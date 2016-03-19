@@ -10,6 +10,7 @@ var session = {
 
 	currentBook: {},
 };
+var dc = "http://purl.org/dc/elements/1.1/";
 
 /* START */
 
@@ -18,7 +19,6 @@ function runReader() {
 	if(file) {
 		var fileReader = new FileReader();
 		fileReader.onload = function(e) {
-			try {
 				var epub = new JSZip(e.target.result);
 				var contentPath = getContentPath(epub);
 				var book = parseContent(epub, contentPath);
@@ -33,9 +33,6 @@ function runReader() {
 
 				session.menu.hidden = true;
 				session.reader.hidden = false;
-			} catch (err) {
-				alert("Couldn't open the epub file");
-			}
 		};
 		fileReader.readAsBinaryString(file);
 	} else {
@@ -108,7 +105,7 @@ function parseContent(epub, path) {
 
 		var file = epub.folder(contentPath).file(href);
 		if(file) {
-			var blob = new Blob([file.asArrayBuffer()], { type: predictMimeType(href) });
+			var blob = new Blob([file.asArrayBuffer()], { type: itemTags[i].getAttribute("media-type") });
 			items[id] = {
 				href: href,
 				url: URL.createObjectURL(blob)
@@ -126,22 +123,16 @@ function parseContent(epub, path) {
 	}
 
 	return {
-		author: xml.getElementsByTagName("dc:creator")[0].innerHTML,
-		title: xml.getElementsByTagName("dc:title")[0].innerHTML,
-		date: xml.getElementsByTagName("dc:date")[0].innerHTML,
-		identifier: xml.getElementsByTagName("dc:identifier")[0].innerHTML,
+		author: xml.getElementsByTagNameNS(dc, "creator")[0].innerHTML,
+		title: xml.getElementsByTagNameNS(dc, "title")[0].innerHTML,
+		date: xml.getElementsByTagNameNS(dc, "date")[0].innerHTML,
+		identifier: xml.getElementsByTagNameNS(dc, "identifier")[0].innerHTML,
 		path: contentPath,
 
 		items: items,
 		order: order,
 		currentPage: 0
 	};
-}
-
-function predictMimeType(fileName) {
-	if(fileName.endsWith(".xhtml") || fileName.endsWith(".html")) return "text/html";
-	else if (fileName.endsWith(".css")) return "text/css"; 
-	else return "";
 }
 
 function getContentPath(epub) {
