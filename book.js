@@ -10,7 +10,6 @@ var session = {
 
 	currentBook: {},
 };
-var dc = "http://purl.org/dc/elements/1.1/";
 
 /* START */
 
@@ -123,10 +122,10 @@ function parseContent(epub, path) {
 	}
 
 	return {
-		author: xml.getElementsByTagNameNS(dc, "creator")[0].innerHTML,
-		title: xml.getElementsByTagNameNS(dc, "title")[0].innerHTML,
-		date: xml.getElementsByTagNameNS(dc, "date")[0].innerHTML,
-		identifier: xml.getElementsByTagNameNS(dc, "identifier")[0].innerHTML,
+		author: xml.getElementsByTagNameNS("*", "creator")[0].innerHTML,
+		title: xml.getElementsByTagNameNS("*", "title")[0].innerHTML,
+		date: xml.getElementsByTagNameNS("*", "date")[0].innerHTML,
+		identifier: xml.getElementsByTagNameNS("*", "identifier")[0].innerHTML,
 		path: contentPath,
 
 		items: items,
