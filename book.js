@@ -1,5 +1,7 @@
 "use strict";
 
+/* DATA */
+
 var session = {
 	pages: document.getElementById("pages"),
 	reader: document.getElementById("reader"),
@@ -9,85 +11,7 @@ var session = {
 	currentBook: {},
 };
 
-function restorePage(identifier) {
-	var pageDataJSON = localStorage.getItem("pageData");
-	if(pageDataJSON) {
-		var pageData = JSON.parse(pageDataJSON);
-		var page = pageData[identifier];
-		if(page) {
-			gotoPage(page);
-		} else {
-			gotoPage(0);
-		}
-	} else {
-		gotoPage(0);
-	}
-}
-
-function isPageInBounds(page) {
-	return (page >= 0 && page < session.pages.children.length);
-}
-
-function gotoPage(page) {
-	if(isPageInBounds(page)) {
-		session.pages.children[session.currentBook.currentPage].hidden = true;
-		session.currentBook.currentPage = page;
-		session.pages.children[session.currentBook.currentPage].hidden = false;
-	}
-}
-
-function nextPage() {
-	gotoPage(session.currentBook.currentPage + 1);
-}
-
-function previousPage() {
-	gotoPage(session.currentBook.currentPage - 1);
-}
-
-function getAllElementsWithAttribute(node, attribute) {
-	return [].slice.call(node.getElementsByTagName("*")).filter(function(v) {
-		return v.getAttribute(attribute) !== null;
-	});
-}
-
-function findItemURL(href) {
-	var items = session.currentBook.items;
-	return Object.keys(items)
-		.map(function (v) { return items[v]; })
-		.find(function (v) { return v.href === href; });
-}
-
-function replaceRelativeURLs(page) {
-	var hrefs = getAllElementsWithAttribute(page.contentDocument, "href");
-	for(var j = 0; j < hrefs.length; ++j) {
-		var href = hrefs[j].getAttribute("href");
-		var item = findItemURL(href);
-		if(item) {
-			hrefs[j].setAttribute("href", item.url);
-		}
-	}
-
-	var srcs = getAllElementsWithAttribute(page.contentDocument, "src");
-	for(var j = 0; j < srcs.length; ++j) {
-		var src = srcs[j].getAttribute("src");
-		var item = findItemURL(src);
-
-		if(item) {
-			srcs[j].setAttribute("src", item.url);
-		}
-	}
-}
-
-function storePage(identifier) {
-	var pageDataJSON = localStorage.getItem("pageData");
-	var pageData = {};
-
-	if(pageDataJSON) {
-		pageData = JSON.parse(pageDataJSON);
-		pageData[identifier] = session.currentBook.currentPage;
-	}
-	localStorage.setItem("pageData", JSON.stringify(pageData));
-}
+/* START */
 
 function runReader() {
 	session.menu.style.display = "none";
@@ -116,35 +40,56 @@ function runReader() {
 	}
 }
 
-function addPages(book, node) {
-	session.pages.hidden = false;
-	for(var i = 0; i < book.order.length; ++i) {
-		var id = book.order[i];
-		var item = book.items[id];
+/* NAVIGATION */
 
-		var div = document.createElement("div");
-		div.setAttribute("id", "page" + i);
-		div.hidden = true;
-
-		var iframe = document.createElement("iframe");
-		iframe.setAttribute("class", "item");
-		iframe.setAttribute("src", item.url);
-		iframe.onload = function() {
-			replaceRelativeURLs(this);
-		};
-
-		div.appendChild(iframe);
-		node.appendChild(div);
+function restorePage(identifier) {
+	var pageDataJSON = localStorage.getItem("pageData");
+	if(pageDataJSON) {
+		var pageData = JSON.parse(pageDataJSON);
+		var page = pageData[identifier];
+		if(page) {
+			gotoPage(page);
+		} else {
+			gotoPage(0);
+		}
+	} else {
+		gotoPage(0);
 	}
 }
 
-function getContentPath(epub) {
-	var containerFile = epub.file("META-INF/container.xml");
-	var containerXML = new DOMParser().parseFromString(containerFile.asText(), "text/xml");
-	var contentPath = containerXML.getElementsByTagName("rootfile")[0].getAttribute("full-path");
+function storePage(identifier) {
+	var pageDataJSON = localStorage.getItem("pageData");
+	var pageData = {};
 
-	return contentPath;
+	if(pageDataJSON) {
+		pageData = JSON.parse(pageDataJSON);
+		pageData[identifier] = session.currentBook.currentPage;
+	}
+	localStorage.setItem("pageData", JSON.stringify(pageData));
 }
+
+function isPageInBounds(page) {
+	return (page >= 0 && page < session.pages.children.length);
+}
+
+function gotoPage(page) {
+	if(isPageInBounds(page)) {
+		session.pages.children[session.currentBook.currentPage].hidden = true;
+		session.currentBook.currentPage = page;
+		session.pages.children[session.currentBook.currentPage].hidden = false;
+	}
+}
+
+function nextPage() {
+	gotoPage(session.currentBook.currentPage + 1);
+}
+
+function previousPage() {
+	gotoPage(session.currentBook.currentPage - 1);
+}
+
+
+/* BOOK PARSING */
 
 function parseContent(epub, path) {
 	var contentPath = path.substr(0, path.lastIndexOf('/'));
@@ -194,4 +139,74 @@ function predictMimeType(fileName) {
 	if(fileName.endsWith(".xhtml") || fileName.endsWith(".html")) return "text/html";
 	else if (fileName.endsWith(".css")) return "text/css"; 
 	else return "";
+}
+
+function getContentPath(epub) {
+	var containerFile = epub.file("META-INF/container.xml");
+	var containerXML = new DOMParser().parseFromString(containerFile.asText(), "text/xml");
+	var contentPath = containerXML.getElementsByTagName("rootfile")[0].getAttribute("full-path");
+
+	return contentPath;
+}
+
+/* BOOK PROCESSING */
+
+function replaceRelativeURLs(page) {
+	var hrefs = getAllElementsWithAttribute(page.contentDocument, "href");
+	for(var j = 0; j < hrefs.length; ++j) {
+		var href = hrefs[j].getAttribute("href");
+		var item = findItemURL(href);
+		if(item) {
+			hrefs[j].setAttribute("href", item.url);
+		}
+	}
+
+	var srcs = getAllElementsWithAttribute(page.contentDocument, "src");
+	for(var j = 0; j < srcs.length; ++j) {
+		var src = srcs[j].getAttribute("src");
+		var item = findItemURL(src);
+
+		if(item) {
+			srcs[j].setAttribute("src", item.url);
+		}
+	}
+}
+
+/* BOOK DISPLAYING */
+
+function addPages(book, node) {
+	session.pages.hidden = false;
+	for(var i = 0; i < book.order.length; ++i) {
+		var id = book.order[i];
+		var item = book.items[id];
+
+		var div = document.createElement("div");
+		div.setAttribute("id", "page" + i);
+		div.hidden = true;
+
+		var iframe = document.createElement("iframe");
+		iframe.setAttribute("class", "item");
+		iframe.setAttribute("src", item.url);
+		iframe.onload = function() {
+			replaceRelativeURLs(this);
+		};
+
+		div.appendChild(iframe);
+		node.appendChild(div);
+	}
+}
+
+/* UTIL */
+
+function getAllElementsWithAttribute(node, attribute) {
+	return [].slice.call(node.getElementsByTagName("*")).filter(function(v) {
+		return v.getAttribute(attribute) !== null;
+	});
+}
+
+function findItemURL(href) {
+	var items = session.currentBook.items;
+	return Object.keys(items)
+		.map(function (v) { return items[v]; })
+		.find(function (v) { return v.href === href; });
 }
