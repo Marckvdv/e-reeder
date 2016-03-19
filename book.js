@@ -146,22 +146,14 @@ function getContentPath(epub) {
 /* BOOK PROCESSING */
 
 function replaceRelativeURLs(page) {
-	var hrefs = getAllElementsWithAttribute(page.contentDocument, "href");
-	for(var j = 0; j < hrefs.length; ++j) {
-		var href = hrefs[j].getAttribute("href");
+	var tags = getAllElementsWithAttribute(page.contentDocument, /^(?:.*:)?(?:href|src)$/);
+	for(var i = 0; i < tags.length; ++i) {
+		var match = tags[i];
+
+		var href = match.tag.getAttribute(match.attr);
 		var item = findItemURL(href);
 		if(item) {
-			hrefs[j].setAttribute("href", item.url);
-		}
-	}
-
-	var srcs = getAllElementsWithAttribute(page.contentDocument, "src");
-	for(var j = 0; j < srcs.length; ++j) {
-		var src = srcs[j].getAttribute("src");
-		var item = findItemURL(src);
-
-		if(item) {
-			srcs[j].setAttribute("src", item.url);
+			match.tag.setAttribute(match.attr, item.url);
 		}
 	}
 }
@@ -192,10 +184,26 @@ function addPages(book, node) {
 
 /* UTIL */
 
-function getAllElementsWithAttribute(node, attribute) {
-	return [].slice.call(node.getElementsByTagName("*")).filter(function(v) {
-		return v.getAttribute(attribute) !== null;
-	});
+function getAllElementsWithAttribute(node, regex) {
+	var result = [];
+	var tags = node.getElementsByTagName("*");
+	for(var i = 0; i < tags.length; ++i) {
+		var tag = tags[i];
+
+		for(var j = 0; j < tag.attributes.length; ++j) {
+			var attr = tag.attributes[j];
+			var match = attr.name.match(regex);
+
+			if(match) {
+				result.push({
+					tag: tag,
+					attr: match[0],
+				});
+			}
+		}
+	}
+
+	return result;
 }
 
 function findItemURL(href) {
