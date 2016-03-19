@@ -14,25 +14,28 @@ var session = {
 /* START */
 
 function runReader() {
-	session.menu.style.display = "none";
-
 	var file = session.input.files[0];
 	if(file) {
 		var fileReader = new FileReader();
 		fileReader.onload = function(e) {
-			var epub = new JSZip(e.target.result);
-			var contentPath = getContentPath(epub);
-			var book = parseContent(epub, contentPath);
-			session.currentBook = book;
+			try {
+				var epub = new JSZip(e.target.result);
+				var contentPath = getContentPath(epub);
+				var book = parseContent(epub, contentPath);
+				session.currentBook = book;
 
-			window.onbeforeunload = function(e) {
-				storePage(session.currentBook.identifier);
-			};
+				window.onbeforeunload = function(e) {
+					storePage(session.currentBook.identifier);
+				};
 
-			addPages(book, session.pages);
-			restorePage(book.identifier);
+				addPages(book, session.pages);
+				restorePage(book.identifier);
 
-			session.reader.hidden = false;
+				session.menu.hidden = true;
+				session.reader.hidden = false;
+			} catch (err) {
+				alert("Couldn't open the epub file");
+			}
 		};
 		fileReader.readAsBinaryString(file);
 	} else {
